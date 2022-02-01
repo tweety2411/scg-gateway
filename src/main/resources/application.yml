@@ -1,0 +1,23 @@
+server:
+  port: 8765
+
+eureka:
+  client:
+    fetch-registry: true
+    defaultZone: http://localhost:8761/eureka
+
+spring:
+  application:
+    name: scg-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: prod-svc
+          uri: lb://PROD-SVC
+          predicates:
+            - Path=/prod/*
+            - Method=GET
+
+
+
+

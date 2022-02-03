@@ -11,12 +11,13 @@ spring:
     name: scg-gateway
   cloud:
     gateway:
+ #     default-filters:
+ #       - name: ErrorFilter
       routes:
         - id: prod-svc
           uri: lb://PROD-SVC
           predicates:
             - Path=/prod/*
-            - Method=GET
 
 
 

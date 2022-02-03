@@ -20,5 +20,44 @@ spring:
             - Path=/prod/*
 
 
+resilience4j.circuitbreaker:
+  configs:
+    default:
+#      recordException: java.lang.IllegalStateException
+      failureRateThreshold: 50
+      minimumNumberOfCalls: 10
+      registerHealthIndicator: true
+
+  instances:
+    prod-svc:
+      registerHealthIndicator: true
+      slidingWindowSize: 100
+      permittedNumberOfCallsInHalfOpenState: 3
+
+resilience4j.timelimiter:
+  instances:
+    prod-svc:
+      timeDuration: 3s
+      cancelRunningFuture: true
 
 
+management:
+  health:
+    diskspace:
+      enabled: false
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details:always
+    web:
+      exposure:
+        include: "*"
+      expose: "*"
+    metrics:
+      enabled: true
+  metrics:
+    enable:
+      resilience4j:
+        circuitbreaker:
+          calls: true

@@ -1,43 +1,26 @@
 package com.heypli.scg.controller;
 
-import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import lombok.Getter;
-import org.springframework.cloud.gateway.support.ServerWebExchangeUtils;
-import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
+import com.heypli.scg.service.TestService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
 
 import java.util.Random;
 
 @RestController
+@RequiredArgsConstructor
 public class TestController {
 
-    @CircuitBreaker(name = "test", fallbackMethod = "/fallback")
+    //@RequiredArgsConstructor는 final이 붙은 초기화되지 않은 필드 생성자를 만들어준다
+    // @NotNull  도 가능
+    // 의존성을 높이기 위해 
+    private final TestService testService;
+
     @GetMapping("/test")
     public String test() {
-        randomException();
-        return "";
+        int randomNo = new Random().nextInt();
+        String result = randomNo % 2 == 0? testService.test(): testService.fail();
+        return result;
     }
 
-    private void randomException() {
-        int randomInt = new Random().nextInt(10);
-
-        if(randomInt <= 7) {
-            throw new RuntimeException("failed");
-        }
-    }
-
-
-    @Order(-2)
-    @GetMapping("/fallback")
-    public Mono<Void> fallbackGet(ServerWebExchange exchange) {
-        Throwable t = exchange.getAttribute(ServerWebExchangeUtils.CIRCUITBREAKER_EXECUTION_EXCEPTION_ATTR);
-        System.out.println("#################");
-        System.out.println(t.getClass());
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ERROR");
-    }
 }

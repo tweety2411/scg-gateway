@@ -11,22 +11,41 @@ spring:
     name: scg-gateway
   cloud:
     gateway:
- #     default-filters:
- #       - name: ErrorFilter
       routes:
         - id: prod-svc
           uri: lb://PROD-SVC
           predicates:
-            - Path=/prod/*
-
+          - Path=/prod/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: scgCircuitBreaker
+                fallbackUri: forward:/fallback
+        - id: test-svc
+          uri: lb://TEST-SVC
+          predicates:
+          - Path=/testSvc/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: testCircuitBreaker
+                fallbackUri: forward:/fallback
 
 resilience4j.circuitbreaker:
   configs:
     default:
-#      recordException: java.lang.IllegalStateException
       failureRateThreshold: 50
+      slowCallRateThreshold: 100
+      slowCallDurationThreshold: 60000
+      permittedNumberOfCallsInHalfOpenState: 4
+      maxWaitDurationInHalfOpenState: 1000
+      slidingWindowType: COUNT_BASED
+      slidingWindowSize: 10
       minimumNumberOfCalls: 10
+      waitDurationInOpenState: 10000
       registerHealthIndicator: true
+      recordExceptions: java.util.concurrent.TimeoutException
+    #  eventConsumerBufferSize: 10
 
   instances:
     prod-svc:
@@ -34,28 +53,38 @@ resilience4j.circuitbreaker:
       slidingWindowSize: 100
       permittedNumberOfCallsInHalfOpenState: 3
 
+    test:
+      baseConfig: default
+
+    test-svc:
+      baseConfig: default
+
 resilience4j.timelimiter:
+  configs:
+    default:
+      timeoutDuration: 3s
   instances:
     prod-svc:
       timeDuration: 3s
       cancelRunningFuture: true
 
-
 management:
   health:
-    diskspace:
-      enabled: false
     circuitbreakers:
       enabled: true
   endpoint:
     health:
-      show-details:always
-    web:
-      exposure:
-        include: "*"
-      expose: "*"
+      showDetails: always
     metrics:
       enabled: true
+    gateway:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+
   metrics:
     enable:
       resilience4j:
